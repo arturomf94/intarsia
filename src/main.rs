@@ -33,8 +33,6 @@ enum SubCommand {
 #[derive(StructOpt, Debug)]
 #[structopt(about = WELCOME_MSG)]
 struct Ds {
-    #[structopt(flatten)]
-    verbose: clap_verbosity_flag::Verbosity,
     #[structopt(subcommand)]
     cmd: SubCommand,
 }
@@ -72,13 +70,6 @@ fn clean_up_project(name: String) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    // Setup logger
-    if let Some(level) = Ds::from_args().verbose.log_level() {
-        env_logger::builder()
-            .filter_level(level.to_level_filter())
-            .write_style(env_logger::fmt::WriteStyle::Always)
-            .init();
-    }
     // Run subcommand
     match Ds::from_args().cmd {
         SubCommand::New { name, image } => match create_new_project(&name, image) {
