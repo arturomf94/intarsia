@@ -61,7 +61,7 @@ fn create_new_project(name: &String, image: String) -> Result<(), Error> {
     let _img = ImageReader::open(&image)
         .map_err(|e| Error::External(e.to_string()))?
         .decode()
-        .map_err(|e| Error::External(e.to_string()));
+        .map_err(|e| Error::External(e.to_string()))?;
     println!(
         "Successfully created new project {}, with the image file `{}`",
         name, image
