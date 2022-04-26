@@ -1,13 +1,13 @@
 extern crate clap_verbosity_flag;
 use structopt::StructOpt;
-#[macro_use]
-extern crate anyhow;
-use anyhow::Context;
-use anyhow::Result;
+// use anyhow::Result;
 extern crate dirs;
 extern crate image;
+mod err;
+use err::Error;
 use image::io::Reader as ImageReader;
-use std::fs;
+use std::process;
+use std::{fs, path::PathBuf};
 
 const WELCOME_MSG: &str = "
 '||' '|.   '|' |''||''|     |     '||''|.    .|'''.|  '||'     |     
@@ -38,25 +38,30 @@ struct Ds {
 }
 
 /// Creates a new intarsia project, with a given name.
-fn create_new_project(name: &String, image: String) -> Result<()> {
-    // let home_dir_opt = dirs::home_dir();
-    let mut project_path_buf =
-        dirs::home_dir().with_context(|| "Could not determine home directory!")?;
+fn create_new_project(name: &String, image: String) -> Result<(), Error> {
+    let mut project_path_buf: PathBuf;
+    match dirs::home_dir() {
+        Some(ppb) => {
+            project_path_buf = ppb;
+        }
+        None => {
+            return Err(Error::External("Could not determine home dir".to_string()));
+        }
+    }
     project_path_buf.push(".intarsia/");
     if !project_path_buf.as_path().exists() {
-        fs::create_dir(project_path_buf.as_path())
-            .with_context(|| "Could not create new project.")?;
+        fs::create_dir(project_path_buf.as_path()).map_err(|e| Error::External(e.to_string()))?;
     }
     project_path_buf.push(format!("{}/", name));
     // Throw error if path already exists
     if project_path_buf.as_path().exists() {
-        return Err(anyhow!("This project already exists!"));
+        return Err(Error::ExistsAlready.into());
     }
-    fs::create_dir(project_path_buf.as_path()).with_context(|| "Could not create new project.")?;
+    fs::create_dir(project_path_buf.as_path()).map_err(|e| Error::External(e.to_string()))?;
     let _img = ImageReader::open(&image)
-        .with_context(|| "Could not open image!")?
+        .map_err(|e| Error::External(e.to_string()))?
         .decode()
-        .with_context(|| "Could not decode image :(")?;
+        .map_err(|e| Error::External(e.to_string()));
     println!(
         "Successfully created new project {}, with the image file `{}`",
         name, image
@@ -64,21 +69,31 @@ fn create_new_project(name: &String, image: String) -> Result<()> {
     Ok(())
 }
 
-fn clean_up_project(name: String) -> Result<()> {
+fn clean_up_project(name: String) -> Result<(), Error> {
     println!("Remove {}", name);
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() {
     // Run subcommand
     match Ds::from_args().cmd {
         SubCommand::New { name, image } => match create_new_project(&name, image) {
+            // If creation failed because the project exists
+            // already, then return the error, but do not clean
+            // up the environment.
+            Err(Error::ExistsAlready) => {
+                eprintln!("{}", Error::ExistsAlready);
+                process::exit(1);
+            }
             Err(err) => {
-                clean_up_project(name)?;
-                return Err(err);
+                if let Err(err) = clean_up_project(name) {
+                    eprintln!("{}", err);
+                    process::exit(1);
+                };
+                eprintln!("{}", err);
+                process::exit(1);
             }
             Ok(_) => (),
         },
     }
-    Ok(())
 }
