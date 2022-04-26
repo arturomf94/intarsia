@@ -32,7 +32,7 @@ enum SubCommand {
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = WELCOME_MSG)]
-struct Ds {
+struct Intarsia {
     #[structopt(subcommand)]
     cmd: SubCommand,
 }
@@ -76,24 +76,26 @@ fn clean_up_project(name: String) -> Result<(), Error> {
 
 fn main() {
     // Run subcommand
-    match Ds::from_args().cmd {
-        SubCommand::New { name, image } => match create_new_project(&name, image) {
-            // If creation failed because the project exists
-            // already, then return the error, but do not clean
-            // up the environment.
-            Err(Error::ExistsAlready) => {
-                eprintln!("{}", Error::ExistsAlready);
-                process::exit(1);
-            }
-            Err(err) => {
-                if let Err(err) = clean_up_project(name) {
+    match Intarsia::from_args().cmd {
+        SubCommand::New { name, image } => {
+            match create_new_project(&name, image) {
+                // If creation failed because the project exists
+                // already, then return the error, but do not
+                // clean-up the environment.
+                Err(Error::ExistsAlready) => {
+                    eprintln!("{}", Error::ExistsAlready);
+                    process::exit(1);
+                }
+                Err(err) => {
+                    if let Err(err) = clean_up_project(name) {
+                        eprintln!("{}", err);
+                        process::exit(1);
+                    };
                     eprintln!("{}", err);
                     process::exit(1);
-                };
-                eprintln!("{}", err);
-                process::exit(1);
+                }
+                Ok(_) => (),
             }
-            Ok(_) => (),
-        },
+        }
     }
 }
