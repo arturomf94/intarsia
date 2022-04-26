@@ -87,11 +87,11 @@ fn main() {
                     process::exit(1);
                 }
                 Err(err) => {
+                    eprintln!("{}", err);
                     if let Err(err) = clean_up_project(name) {
                         eprintln!("{}", err);
                         process::exit(1);
                     };
-                    eprintln!("{}", err);
                     process::exit(1);
                 }
                 Ok(_) => (),
