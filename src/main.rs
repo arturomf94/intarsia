@@ -1,4 +1,5 @@
 extern crate clap_verbosity_flag;
+use image::imageops::FilterType;
 use structopt::StructOpt;
 // use anyhow::Result;
 extern crate dirs;
@@ -117,7 +118,12 @@ impl Project {
 
     fn transform_image(&mut self) -> Result<(), Error> {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
-        image = image.flipv();
+        let width = image.width();
+        let height = image.height();
+        // TODO: Add mesh in the image.
+        // TODO: Recude colours in the image.
+        image = image.resize(64, 64, FilterType::Nearest);
+        image = image.resize(width, height, FilterType::Nearest);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.jpg");
         image
