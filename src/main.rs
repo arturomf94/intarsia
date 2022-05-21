@@ -138,7 +138,7 @@ impl Project {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(StructOpt)]
 enum SubCommand {
     /// Create a new project.
     New {
@@ -163,7 +163,7 @@ enum SubCommand {
     },
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt)]
 #[structopt(about = WELCOME_MSG)]
 struct Intarsia {
     #[structopt(subcommand)]
