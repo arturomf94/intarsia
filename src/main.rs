@@ -1,16 +1,18 @@
 extern crate clap_verbosity_flag;
-use image::imageops::FilterType;
+extern crate imageproc;
 use structopt::StructOpt;
-// use anyhow::Result;
 extern crate dirs;
 extern crate image;
+extern crate strum_macros;
 mod err;
+
 use err::Error;
+use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
-use image::DynamicImage;
+use image::{DynamicImage, GenericImageView};
+use imageproc::drawing::{draw_hollow_rect_mut, draw_line_segment_mut};
 use std::process;
 use std::{fs, path::PathBuf};
-extern crate strum_macros;
 use strum_macros::EnumString;
 
 const WELCOME_MSG: &str = "
@@ -40,6 +42,33 @@ struct Instructions {
     /// TODO: Add functionality so that these instructions can
     /// be read from a given point within the project.
     text: String,
+}
+
+fn add_grid_to_image(image: &mut DynamicImage) {
+    let width = image.width();
+    let height = image.height();
+    let pixel_width_size = width as f32 / 50f32;
+    let pixel_height_size = height as f32 / 50f32;
+    println!("{} {}", pixel_width_size, pixel_height_size);
+    let black = image::Rgba([0u8, 0u8, 0u8, 255u8]);
+    // Draw horizontal lines
+    for i in 0..50 {
+        draw_line_segment_mut(
+            image,
+            (0 as f32, (i as f32 * pixel_height_size)),
+            (width as f32, (i as f32 * pixel_height_size)),
+            black,
+        );
+    }
+    // Draw vertical lines
+    for i in 0..50 {
+        draw_line_segment_mut(
+            image,
+            ((i as f32 * pixel_width_size), 0 as f32),
+            ((i as f32 * pixel_width_size), height as f32),
+            black,
+        );
+    }
 }
 
 /// Represents a project instance. This holds information about
@@ -120,10 +149,13 @@ impl Project {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
         let height = image.height();
-        // TODO: Add mesh in the image.
+        println!("{} {}", image.width(), image.height());
         // TODO: Recude colours in the image.
-        image = image.resize(64, 64, FilterType::Nearest);
-        image = image.resize(width, height, FilterType::Nearest);
+        image = image.resize_exact(50, 50, FilterType::Nearest);
+        println!("{} {}", image.width(), image.height());
+        image = image.resize_exact(width, height, FilterType::Nearest);
+        println!("{} {}", image.width(), image.height());
+        add_grid_to_image(&mut image);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.jpg");
         image
