@@ -119,14 +119,19 @@ impl Project {
         Ok(())
     }
 
-    fn transform_image(&mut self) -> Result<(), Error> {
+    fn transform_image(
+        &mut self,
+        output_width: u32,
+        output_height: u32,
+        colours: u8,
+    ) -> Result<(), Error> {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
         let height = image.height();
-        // TODO: Recude colours in the image.
-        image = image.resize_exact(50, 50, FilterType::Nearest);
+        // TODO: Reduce colours in the image.
+        image = image.resize_exact(output_width, output_height, FilterType::Nearest);
         image = image.resize_exact(width, height, FilterType::Nearest);
-        add_grid_to_image(&mut image);
+        add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.jpg");
         image
@@ -151,8 +156,16 @@ enum SubCommand {
         /// the basis for this new projct.
         #[structopt(short, long)]
         image: String,
+        /// The width of the output image.
+        #[structopt(short, long)]
+        width: u32,
+        /// The height of the output image.
+        #[structopt(short, long)]
+        height: u32,
+        /// The number of colours in the output image.
+        #[structopt(short, long)]
+        colours: u8,
     },
-    ///
     Remove {
         name: String,
     },
@@ -176,7 +189,13 @@ struct Intarsia {
 fn main() {
     // Run subcommand
     match Intarsia::from_args().cmd {
-        SubCommand::New { name, image } => {
+        SubCommand::New {
+            name,
+            image,
+            width,
+            height,
+            colours,
+        } => {
             let project = Project::new(&name);
             match project {
                 Err(err) => {
@@ -192,7 +211,7 @@ fn main() {
                         }
                         _ => (),
                     }
-                    match project.transform_image() {
+                    match project.transform_image(width, height, colours) {
                         Err(err) => {
                             eprintln!("Could not transform image. Error: {}", err);
                             project.remove_project();
