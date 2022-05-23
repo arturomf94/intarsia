@@ -1,8 +1,12 @@
+extern crate color_reduction;
 extern crate image;
 extern crate imageproc;
+extern crate palette_extract;
 
+use color_reduction::image::Rgb;
 use image::DynamicImage;
 use imageproc::drawing::draw_line_segment_mut;
+use palette_extract::Color;
 
 /// Function to draw a grid over the pixels of an image.
 /// The grid size is determined by the width and height inputs,
@@ -32,4 +36,10 @@ pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height:
             black,
         );
     }
+}
+
+/// Convert a `Color` instance from `palette_extract` crate into
+/// an `Rgb` instance from the `image` crate.
+pub fn colour2rgb(colour: Color) -> Rgb<u8> {
+    Rgb::from([colour.r, colour.g, colour.b])
 }

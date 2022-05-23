@@ -1,19 +1,24 @@
 extern crate clap_verbosity_flag;
-extern crate imageproc;
-use structopt::StructOpt;
 extern crate dirs;
 extern crate image;
+extern crate imageproc;
+extern crate palette_extract;
 extern crate strum_macros;
 mod err;
 mod utils;
 
 use crate::err::Error;
-use crate::utils::add_grid_to_image;
+use crate::utils::{add_grid_to_image, colour2rgb};
+use color_reduction::image::open;
+use color_reduction::image::Rgb;
+use color_reduction::reduce_colors;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
+use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
 use std::process;
 use std::{fs, path::PathBuf};
+use structopt::StructOpt;
 use strum_macros::EnumString;
 
 const WELCOME_MSG: &str = "
@@ -119,6 +124,35 @@ impl Project {
         Ok(())
     }
 
+    fn reduce_colours(&self, image: DynamicImage, colours: u8) -> Result<DynamicImage, Error> {
+        let mut input_path: PathBuf = self.path.clone();
+        input_path.push("resized.jpg");
+        image
+            .save(&input_path)
+            .map_err(|e| Error::External(e.to_string()))?;
+        let image = open(input_path).map_err(|e| Error::External(e.to_string()))?;
+        let image_bytes = image.as_bytes();
+        let colour_palette = get_palette_with_options(
+            image_bytes,
+            PixelEncoding::Rgb,
+            Quality::default(),
+            MaxColors::new(colours),
+            PixelFilter::None,
+        );
+        let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
+        let quantized_image = reduce_colors(image, &palette[..]);
+        let mut output_path: PathBuf = self.path.clone();
+        output_path.push("quantized.jpg");
+        quantized_image
+            .save(&output_path)
+            .map_err(|e| Error::External(e.to_string()))?;
+        let output_image = ImageReader::open(&output_path)
+            .map_err(|e| Error::External(e.to_string()))?
+            .decode()
+            .map_err(|e| Error::External(e.to_string()))?;
+        Ok(output_image)
+    }
+
     fn transform_image(
         &mut self,
         output_width: u32,
@@ -128,8 +162,11 @@ impl Project {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
         let height = image.height();
-        // TODO: Reduce colours in the image.
         image = image.resize_exact(output_width, output_height, FilterType::Nearest);
+
+        image = self
+            .reduce_colours(image, colours)
+            .map_err(|e| Error::External(e.to_string()))?;
         image = image.resize_exact(width, height, FilterType::Nearest);
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
