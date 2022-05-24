@@ -12,6 +12,7 @@ use crate::utils::{add_grid_to_image, colour2rgb};
 use color_reduction::image::open;
 use color_reduction::image::Rgb;
 use color_reduction::reduce_colors;
+use image::imageops::blur;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
@@ -156,6 +157,7 @@ impl Project {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
         let height = image.height();
+        image = DynamicImage::ImageRgba8(blur(&image, 3.0));
         image = self
             .reduce_colours(image, colours)
             .map_err(|e| Error::External(e.to_string()))?;
