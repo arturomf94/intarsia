@@ -156,11 +156,10 @@ impl Project {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
         let height = image.height();
-        image = image.resize_exact(output_width, output_height, FilterType::Nearest);
-
         image = self
             .reduce_colours(image, colours)
             .map_err(|e| Error::External(e.to_string()))?;
+        image = image.resize_exact(output_width, output_height, FilterType::Nearest);
         image = image.resize_exact(width, height, FilterType::Nearest);
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
