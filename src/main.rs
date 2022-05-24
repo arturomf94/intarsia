@@ -15,7 +15,7 @@ use color_reduction::reduce_colors;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
-use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
+use palette_extract::get_palette_rgb;
 use std::process;
 use std::{fs, path::PathBuf};
 use structopt::StructOpt;
@@ -132,15 +132,9 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         let image = open(input_path).map_err(|e| Error::External(e.to_string()))?;
         let image_bytes = image.as_bytes();
-        let colour_palette = get_palette_with_options(
-            image_bytes,
-            PixelEncoding::Rgb,
-            Quality::default(),
-            MaxColors::new(colours),
-            PixelFilter::None,
-        );
+        let colour_palette = get_palette_rgb(image_bytes);
         let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
-        let quantized_image = reduce_colors(image, &palette[..]);
+        let quantized_image = reduce_colors(image, &palette[0..(colours as usize)]);
         let mut output_path: PathBuf = self.path.clone();
         output_path.push("quantized.jpg");
         quantized_image
