@@ -8,7 +8,7 @@ mod err;
 mod utils;
 
 use crate::err::Error;
-use crate::utils::{add_grid_to_image, colour2rgb};
+use crate::utils::{add_grid_to_image, colour2rgb, set_closest_colour};
 use color_reduction::image::open;
 use color_reduction::image::Rgb;
 use color_reduction::reduce_colors;
@@ -135,7 +135,12 @@ impl Project {
         let image_bytes = image.as_bytes();
         let colour_palette = get_palette_rgb(image_bytes);
         let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
-        let quantized_image = reduce_colors(image, &palette[0..(colours as usize)]);
+        let mut quantized_image = reduce_colors(image, &palette[0..(colours as usize)]);
+
+        for pixel in quantized_image.enumerate_pixels_mut() {
+            set_closest_colour(pixel.2, &palette[0..(colours as usize)]);
+            // *pixel.2 = new_colour;
+        }
         let mut output_path: PathBuf = self.path.clone();
         output_path.push("quantized.jpg");
         quantized_image
@@ -163,6 +168,9 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         image = image.resize_exact(output_width, output_height, FilterType::Nearest);
         image = image.resize_exact(width, height, FilterType::Nearest);
+        // image = self
+        //     .reduce_colours(image, colours)
+        //     .map_err(|e| Error::External(e.to_string()))?;
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.jpg");

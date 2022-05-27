@@ -3,7 +3,7 @@ extern crate image;
 extern crate imageproc;
 extern crate palette_extract;
 
-use color_reduction::image::Rgb;
+use color_reduction::image::{Pixel, Rgb};
 use image::DynamicImage;
 use imageproc::drawing::draw_line_segment_mut;
 use palette_extract::Color;
@@ -42,4 +42,38 @@ pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height:
 /// an `Rgb` instance from the `image` crate.
 pub fn colour2rgb(colour: Color) -> Rgb<u8> {
     Rgb::from([colour.r, colour.g, colour.b])
+}
+
+fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
+    let ch1 = c1.channels();
+    let ch2 = c2.channels();
+    let r1 = ch1[0] as f32;
+    let r2 = ch2[0] as f32;
+    let g1 = ch1[1] as f32;
+    let g2 = ch2[1] as f32;
+    let b1 = ch1[2] as f32;
+    let b2 = ch2[2] as f32;
+    f32::sqrt((r2 - r1).powf(2.0) + (g2 - g1).powf(2.0) + (b2 - b1).powf(2.0))
+}
+
+fn min_index(array: &[f32]) -> usize {
+    let mut i = 0;
+
+    for (j, &value) in array.iter().enumerate() {
+        if value < array[i] {
+            i = j;
+        }
+    }
+
+    i
+}
+
+/// Sets a mutable reference of a pixel in an image to its
+/// closest colour in a given palette reference, which is a
+/// vector of candidate colours.
+pub fn set_closest_colour(pixel: &mut Rgb<u8>, palette: &[Rgb<u8>]) {
+    let distances: Vec<f32> = palette.iter().map(|x| colour_distance(x, pixel)).collect();
+    let min_index = min_index(&distances[..]);
+    // let min_index;
+    *pixel = palette[min_index];
 }
