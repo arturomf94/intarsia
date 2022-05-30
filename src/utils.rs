@@ -7,6 +7,7 @@ use color_reduction::image::{Pixel, Rgb};
 use image::DynamicImage;
 use imageproc::drawing::draw_line_segment_mut;
 use palette_extract::Color;
+use std::collections::HashMap;
 
 /// Function to draw a grid over the pixels of an image.
 /// The grid size is determined by the width and height inputs,
@@ -15,8 +16,10 @@ use palette_extract::Color;
 pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height: u32) {
     let width = image.width();
     let height = image.height();
-    let pixel_width_size = width as f32 / grid_width as f32;
-    let pixel_height_size = height as f32 / grid_height as f32;
+    // let pixel_width_size = width as f32 / grid_width as f32;
+    // let pixel_height_size = height as f32 / grid_height as f32;
+    let pixel_width_size = (width / grid_width) as f32;
+    let pixel_height_size = (height / grid_height) as f32;
     let black = image::Rgba([0u8, 0u8, 0u8, 255u8]);
     // Draw horizontal lines
     for i in 0..(grid_height as usize) {
@@ -44,7 +47,7 @@ pub fn colour2rgb(colour: Color) -> Rgb<u8> {
     Rgb::from([colour.r, colour.g, colour.b])
 }
 
-fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
+pub fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
     let ch1 = c1.channels();
     let ch2 = c2.channels();
     let r1 = ch1[0] as f32;
@@ -56,7 +59,16 @@ fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
     f32::sqrt((r2 - r1).powf(2.0) + (g2 - g1).powf(2.0) + (b2 - b1).powf(2.0))
 }
 
-fn min_index(array: &[f32]) -> usize {
+pub fn mode(numbers: &[usize]) -> Option<usize> {
+    let mut counts = HashMap::new();
+    numbers.iter().copied().max_by_key(|&n| {
+        let count = counts.entry(n).or_insert(0);
+        *count += 1;
+        *count
+    })
+}
+
+pub fn min_index(array: &[f32]) -> usize {
     let mut i = 0;
 
     for (j, &value) in array.iter().enumerate() {
