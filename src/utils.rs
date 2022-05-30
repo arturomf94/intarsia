@@ -61,11 +61,9 @@ pub fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
 
 pub fn mode(numbers: &[usize]) -> usize {
     let mut occurrences = HashMap::new();
-
     for &value in numbers {
         *occurrences.entry(value).or_insert(0) += 1;
     }
-
     occurrences
         .into_iter()
         .max_by_key(|&(_, count)| count)

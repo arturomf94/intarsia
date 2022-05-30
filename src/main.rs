@@ -153,11 +153,6 @@ impl Project {
         let height = quantized_image.height();
         let pixel_width_size = width / grid_width;
         let pixel_height_size = height / grid_height;
-        println!("Width {}, height {}", width, height);
-        println!(
-            "pixel width {}, pixel height {}",
-            pixel_width_size, pixel_height_size
-        );
         for j in 0..(grid_height) {
             for i in 0..(grid_width) {
                 let mut closest_colours: Vec<usize> = Vec::new();
