@@ -59,13 +59,18 @@ pub fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
     f32::sqrt((r2 - r1).powf(2.0) + (g2 - g1).powf(2.0) + (b2 - b1).powf(2.0))
 }
 
-pub fn mode(numbers: &[usize]) -> Option<usize> {
-    let mut counts = HashMap::new();
-    numbers.iter().copied().max_by_key(|&n| {
-        let count = counts.entry(n).or_insert(0);
-        *count += 1;
-        *count
-    })
+pub fn mode(numbers: &[usize]) -> usize {
+    let mut occurrences = HashMap::new();
+
+    for &value in numbers {
+        *occurrences.entry(value).or_insert(0) += 1;
+    }
+
+    occurrences
+        .into_iter()
+        .max_by_key(|&(_, count)| count)
+        .map(|(val, _)| val)
+        .expect("Cannot compute the mode of zero numbers")
 }
 
 pub fn min_index(array: &[f32]) -> usize {

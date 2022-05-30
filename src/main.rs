@@ -173,7 +173,7 @@ impl Project {
                         closest_colours.push(min_index);
                     }
                 }
-                let dominant_colour = mode(&closest_colours[..]).unwrap();
+                let dominant_colour = mode(&closest_colours[..]);
                 for p2 in 0..(pixel_height_size) {
                     for p1 in 0..(pixel_width_size) {
                         let pixel = quantized_image
