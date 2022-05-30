@@ -127,7 +127,7 @@ impl Project {
 
     fn reduce_colours(&self, image: DynamicImage, colours: u8) -> Result<DynamicImage, Error> {
         let mut input_path: PathBuf = self.path.clone();
-        input_path.push("resized.jpg");
+        input_path.push("quantization_input.jpg");
         image
             .save(&input_path)
             .map_err(|e| Error::External(e.to_string()))?;
@@ -136,10 +136,9 @@ impl Project {
         let colour_palette = get_palette_rgb(image_bytes);
         let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
         let mut quantized_image = reduce_colors(image, &palette[0..(colours as usize)]);
-
+        // let mut quantized_image = image.to_rgb();
         for pixel in quantized_image.enumerate_pixels_mut() {
-            set_closest_colour(pixel.2, &palette[0..(colours as usize)]);
-            // *pixel.2 = new_colour;
+            set_closest_colour(pixel, &palette[0..(colours as usize)]);
         }
         let mut output_path: PathBuf = self.path.clone();
         output_path.push("quantized.jpg");
@@ -163,14 +162,24 @@ impl Project {
         let width = image.width();
         let height = image.height();
         image = DynamicImage::ImageRgba8(blur(&image, 3.0));
-        image = self
-            .reduce_colours(image, colours)
-            .map_err(|e| Error::External(e.to_string()))?;
-        image = image.resize_exact(output_width, output_height, FilterType::Nearest);
-        image = image.resize_exact(width, height, FilterType::Nearest);
         // image = self
         //     .reduce_colours(image, colours)
         //     .map_err(|e| Error::External(e.to_string()))?;
+        image = image.resize_exact(output_width, output_height, FilterType::Nearest);
+        let mut path: PathBuf = self.path.clone();
+        path.push("resized_down.png");
+        image
+            .save(&path)
+            .map_err(|e| Error::External(e.to_string()))?;
+        image = image.resize_exact(width, height, FilterType::Nearest);
+        let mut path: PathBuf = self.path.clone();
+        path.push("resized_up.png");
+        image
+            .save(&path)
+            .map_err(|e| Error::External(e.to_string()))?;
+        image = self
+            .reduce_colours(image, colours)
+            .map_err(|e| Error::External(e.to_string()))?;
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.jpg");

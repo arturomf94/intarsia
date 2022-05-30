@@ -71,9 +71,12 @@ fn min_index(array: &[f32]) -> usize {
 /// Sets a mutable reference of a pixel in an image to its
 /// closest colour in a given palette reference, which is a
 /// vector of candidate colours.
-pub fn set_closest_colour(pixel: &mut Rgb<u8>, palette: &[Rgb<u8>]) {
-    let distances: Vec<f32> = palette.iter().map(|x| colour_distance(x, pixel)).collect();
+pub fn set_closest_colour(pixel: (u32, u32, &mut Rgb<u8>), palette: &[Rgb<u8>]) {
+    let distances: Vec<f32> = palette
+        .iter()
+        .map(|x| colour_distance(x, pixel.2))
+        .collect();
     let min_index = min_index(&distances[..]);
     // let min_index;
-    *pixel = palette[min_index];
+    *pixel.2 = palette[min_index];
 }
