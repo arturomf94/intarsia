@@ -127,7 +127,7 @@ impl Project {
 
     // Reduces the number of colours (i.e. "quantizes") an image
     // with the number of desired colours and image dimensions
-    // as parameters. This function
+    // as parameters.
     fn reduce_colours(&self, image: DynamicImage, colours: u8) -> Result<DynamicImage, Error> {
         let mut input_path: PathBuf = self.path.clone();
         input_path.push("quantization_input.png");
