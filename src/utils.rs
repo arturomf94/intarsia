@@ -6,7 +6,6 @@ use image::DynamicImage;
 use image::{Pixel, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use palette_extract::Color;
-use std::collections::HashMap;
 
 /// Function to draw a grid over the pixels of an image.
 /// The grid size is determined by the width and height inputs,
@@ -15,10 +14,8 @@ use std::collections::HashMap;
 pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height: u32) {
     let width = image.width();
     let height = image.height();
-    // let pixel_width_size = width as f32 / grid_width as f32;
-    // let pixel_height_size = height as f32 / grid_height as f32;
-    let pixel_width_size = (width / grid_width) as f32;
-    let pixel_height_size = (height / grid_height) as f32;
+    let pixel_width_size = width as f32 / grid_width as f32;
+    let pixel_height_size = height as f32 / grid_height as f32;
     let black = image::Rgba([0u8, 0u8, 0u8, 255u8]);
     // Draw horizontal lines
     for i in 0..(grid_height as usize) {
@@ -58,18 +55,6 @@ pub fn colour_distance(c1: &Rgb<u8>, c2: &Rgb<u8>) -> f32 {
     f32::sqrt((r2 - r1).powf(2.0) + (g2 - g1).powf(2.0) + (b2 - b1).powf(2.0))
 }
 
-pub fn mode(numbers: &[usize]) -> usize {
-    let mut occurrences = HashMap::new();
-    for &value in numbers {
-        *occurrences.entry(value).or_insert(0) += 1;
-    }
-    occurrences
-        .into_iter()
-        .max_by_key(|&(_, count)| count)
-        .map(|(val, _)| val)
-        .expect("Cannot compute the mode of zero numbers")
-}
-
 pub fn min_index(array: &[f32]) -> usize {
     let mut i = 0;
     for (j, &value) in array.iter().enumerate() {
@@ -78,4 +63,17 @@ pub fn min_index(array: &[f32]) -> usize {
         }
     }
     i
+}
+
+/// Sets a mutable reference of a pixel in an image to its
+/// closest colour in a given palette reference, which is a
+/// vector of candidate colours.
+pub fn set_closest_colour(pixel: (u32, u32, &mut Rgb<u8>), palette: &[Rgb<u8>]) {
+    let distances: Vec<f32> = palette
+        .iter()
+        .map(|x| colour_distance(x, pixel.2))
+        .collect();
+    let min_index = min_index(&distances[..]);
+    // let min_index;
+    *pixel.2 = palette[min_index];
 }

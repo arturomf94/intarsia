@@ -8,9 +8,8 @@ mod err;
 mod utils;
 
 use crate::err::Error;
-use crate::utils::{add_grid_to_image, colour2rgb, colour_distance, min_index, mode};
+use crate::utils::{add_grid_to_image, colour2rgb, set_closest_colour};
 use image::imageops::blur;
-use image::imageops::crop;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
@@ -126,13 +125,10 @@ impl Project {
         Ok(())
     }
 
-    fn reduce_colours(
-        &self,
-        image: DynamicImage,
-        colours: u8,
-        grid_width: u32,
-        grid_height: u32,
-    ) -> Result<DynamicImage, Error> {
+    // Reduces the number of colours (i.e. "quantizes") an image
+    // with the number of desired colours and image dimensions
+    // as parameters. This function
+    fn reduce_colours(&self, image: DynamicImage, colours: u8) -> Result<DynamicImage, Error> {
         let mut input_path: PathBuf = self.path.clone();
         input_path.push("quantization_input.png");
         image
@@ -153,60 +149,17 @@ impl Project {
             PixelFilter::None,
         );
         let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
-        let palette_slice = &palette[0..(colours as usize)];
-        // let mut quantized_image = reduce_colors(image, palette_slice);
-        // Get the most common colour for each "block" and set
-        // that same colour to all pixels in block.
         let mut quantized_image = image.to_rgb8();
-        let width = quantized_image.width();
-        let height = quantized_image.height();
-        let pixel_width_size = width / grid_width;
-        let pixel_height_size = height / grid_height;
-        for j in 0..(grid_height) {
-            for i in 0..(grid_width) {
-                let mut closest_colours: Vec<usize> = Vec::new();
-                for p2 in 0..(pixel_height_size) {
-                    for p1 in 0..(pixel_width_size) {
-                        let pixel = quantized_image
-                            .get_pixel_mut(i * pixel_width_size + p1, j * pixel_height_size + p2);
-                        let distances: Vec<f32> = palette_slice
-                            .iter()
-                            .map(|x| colour_distance(x, pixel))
-                            .collect();
-                        let min_index = min_index(&distances[..]);
-                        closest_colours.push(min_index);
-                    }
-                }
-                let dominant_colour = mode(&closest_colours[..]);
-                for p2 in 0..(pixel_height_size) {
-                    for p1 in 0..(pixel_width_size) {
-                        let pixel = quantized_image
-                            .get_pixel_mut(i * pixel_width_size + p1, j * pixel_height_size + p2);
-                        *pixel = palette_slice[dominant_colour];
-                    }
-                }
-            }
+        for pixel in quantized_image.enumerate_pixels_mut() {
+            set_closest_colour(pixel, &palette[0..(colours as usize)]);
         }
         let mut quantized_path: PathBuf = self.path.clone();
         quantized_path.push("quantized.png");
         quantized_image
             .save(&quantized_path)
             .map_err(|e| Error::External(e.to_string()))?;
-        let mut image_to_crop =
-            image::open(quantized_path).map_err(|e| Error::External(e.to_string()))?;
-        let cropped_image = crop(
-            &mut image_to_crop,
-            0,
-            0,
-            pixel_width_size * grid_width,
-            pixel_height_size * grid_height,
-        )
-        .to_image();
         let mut output_path: PathBuf = self.path.clone();
-        output_path.push("cropped.png");
-        cropped_image
-            .save(&output_path)
-            .map_err(|e| Error::External(e.to_string()))?;
+        output_path.push("quantized.png");
         let output_image = ImageReader::open(&output_path)
             .map_err(|e| Error::External(e.to_string()))?
             .decode()
@@ -237,7 +190,7 @@ impl Project {
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
         image = self
-            .reduce_colours(image, colours, output_width, output_height)
+            .reduce_colours(image, colours)
             .map_err(|e| Error::External(e.to_string()))?;
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
