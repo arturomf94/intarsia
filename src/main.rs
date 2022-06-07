@@ -8,12 +8,9 @@ mod err;
 mod utils;
 
 use crate::err::Error;
-use crate::utils::{
-    add_grid_to_image, colour2rgb, colour_distance, min_index, mode, set_closest_colour,
-};
+use crate::utils::{add_grid_to_image, colour2rgb, colour_distance, min_index, mode};
 use color_reduction::image::open;
 use color_reduction::image::Rgb;
-use color_reduction::reduce_colors;
 use image::imageops::blur;
 use image::imageops::crop;
 use image::imageops::FilterType;
@@ -42,8 +39,8 @@ enum ImageType {
 }
 
 struct Image {
-    image_type: ImageType,
-    path: PathBuf,
+    _image_type: ImageType,
+    _path: PathBuf,
     image: DynamicImage,
 }
 
@@ -51,7 +48,7 @@ struct Instructions {
     /// This is the text with the instructions.
     /// TODO: Add functionality so that these instructions can
     /// be read from a given point within the project.
-    text: String,
+    _text: String,
 }
 
 /// Represents a project instance. This holds information about
@@ -66,7 +63,7 @@ struct Project {
     /// Processed image.
     processed_image: Option<Image>,
     /// The instructions for this crochet project.
-    instructions: Option<Instructions>,
+    _instructions: Option<Instructions>,
 }
 
 impl Project {
@@ -98,7 +95,7 @@ impl Project {
             path,
             original_image: None,
             processed_image: None,
-            instructions: None,
+            _instructions: None,
         })
     }
 
@@ -121,8 +118,8 @@ impl Project {
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
         self.original_image = Some(Image {
-            image_type: ImageType::Original,
-            path,
+            _image_type: ImageType::Original,
+            _path: path,
             image,
         });
         Ok(())
@@ -148,7 +145,7 @@ impl Project {
         // let mut quantized_image = reduce_colors(image, palette_slice);
         // Get the most common colour for each "block" and set
         // that same colour to all pixels in block.
-        let mut quantized_image = image.to_rgb();
+        let mut quantized_image = image.to_rgb8();
         let width = quantized_image.width();
         let height = quantized_image.height();
         let pixel_width_size = width / grid_width;
@@ -185,7 +182,7 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         let mut image_to_crop =
             image::open(quantized_path).map_err(|e| Error::External(e.to_string()))?;
-        let cropped_image = image::imageops::crop(
+        let cropped_image = crop(
             &mut image_to_crop,
             0,
             0,
@@ -237,8 +234,8 @@ impl Project {
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
         self.processed_image = Some(Image {
-            image_type: ImageType::Processed,
-            path,
+            _image_type: ImageType::Processed,
+            _path: path,
             image,
         });
         Ok(())
@@ -266,15 +263,15 @@ enum SubCommand {
         colours: u8,
     },
     Remove {
-        name: String,
+        _name: String,
     },
     Show {
-        name: String,
+        _name: String,
         #[structopt(short, long)]
-        r#type: String,
+        _type: String,
     },
     Instructions {
-        name: String,
+        _name: String,
     },
 }
 
