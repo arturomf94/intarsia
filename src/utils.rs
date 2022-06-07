@@ -1,10 +1,9 @@
-extern crate color_reduction;
 extern crate image;
 extern crate imageproc;
 extern crate palette_extract;
 
-use color_reduction::image::{Pixel, Rgb};
 use image::DynamicImage;
+use image::{Pixel, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use palette_extract::Color;
 use std::collections::HashMap;

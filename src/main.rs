@@ -9,13 +9,12 @@ mod utils;
 
 use crate::err::Error;
 use crate::utils::{add_grid_to_image, colour2rgb, colour_distance, min_index, mode};
-use color_reduction::image::open;
-use color_reduction::image::Rgb;
 use image::imageops::blur;
 use image::imageops::crop;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
+use image::{open, Rgb};
 use palette_extract::get_palette_rgb;
 use std::process;
 use std::{fs, path::PathBuf};
