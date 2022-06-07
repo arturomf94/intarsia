@@ -165,6 +165,15 @@ impl Project {
         Ok(output_image)
     }
 
+    /// This function has most of the functionality. It
+    /// transforms the input image by doing the following:
+    /// 1. Resizing down the original image
+    /// 2. Resizing the image back up to its original dimensions
+    /// 3. Reducing the number of colours by calling the
+    ///     `reduce_colours` function.
+    /// 4. Adding a grid to the image by calling the
+    ///     `add_grid_to_image` function.
+    /// Finally, it stores the output in the project path.
     fn transform_image(
         &mut self,
         output_width: u32,
