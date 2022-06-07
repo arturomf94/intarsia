@@ -14,8 +14,8 @@ use image::imageops::crop;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
-use image::{open, Rgb};
-use palette_extract::get_palette_rgb;
+use image::Rgb;
+use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
 use std::process;
 use std::{fs, path::PathBuf};
 use structopt::StructOpt;
@@ -106,13 +106,15 @@ impl Project {
         }
     }
 
+    /// Reads a new image, given a file-path string, and saves
+    /// it in the project folder under the name `original.png`.
     fn read_image(&mut self, image: String) -> Result<(), Error> {
         let image = ImageReader::open(&image)
             .map_err(|e| Error::External(e.to_string()))?
             .decode()
             .map_err(|e| Error::External(e.to_string()))?;
         let mut path: PathBuf = self.path.clone();
-        path.push("original.jpg");
+        path.push("original.png");
         image
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
@@ -132,13 +134,24 @@ impl Project {
         grid_height: u32,
     ) -> Result<DynamicImage, Error> {
         let mut input_path: PathBuf = self.path.clone();
-        input_path.push("quantization_input.jpg");
+        input_path.push("quantization_input.png");
         image
             .save(&input_path)
             .map_err(|e| Error::External(e.to_string()))?;
-        let image = open(input_path).map_err(|e| Error::External(e.to_string()))?;
+        let image = ImageReader::open(&input_path)
+            .map_err(|e| Error::External(e.to_string()))?
+            .decode()
+            .map_err(|e| Error::External(e.to_string()))?;
         let image_bytes = image.as_bytes();
-        let colour_palette = get_palette_rgb(image_bytes);
+        // let colour_palette = get_palette_rgb(image_bytes);
+        // let colour_palette = get_palette_rgb(image_bytes);
+        let colour_palette = get_palette_with_options(
+            &image_bytes,
+            PixelEncoding::Rgba,
+            Quality::default(),
+            MaxColors::default(),
+            PixelFilter::None,
+        );
         let palette: Vec<Rgb<u8>> = colour_palette.iter().map(|x| colour2rgb(*x)).collect();
         let palette_slice = &palette[0..(colours as usize)];
         // let mut quantized_image = reduce_colors(image, palette_slice);
@@ -175,7 +188,7 @@ impl Project {
             }
         }
         let mut quantized_path: PathBuf = self.path.clone();
-        quantized_path.push("quantized.jpg");
+        quantized_path.push("quantized.png");
         quantized_image
             .save(&quantized_path)
             .map_err(|e| Error::External(e.to_string()))?;
@@ -190,7 +203,7 @@ impl Project {
         )
         .to_image();
         let mut output_path: PathBuf = self.path.clone();
-        output_path.push("cropped.jpg");
+        output_path.push("cropped.png");
         cropped_image
             .save(&output_path)
             .map_err(|e| Error::External(e.to_string()))?;
@@ -228,7 +241,7 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
-        path.push("processed.jpg");
+        path.push("processed.png");
         image
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
