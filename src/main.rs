@@ -139,8 +139,6 @@ impl Project {
             .decode()
             .map_err(|e| Error::External(e.to_string()))?;
         let image_bytes = image.as_bytes();
-        // let colour_palette = get_palette_rgb(image_bytes);
-        // let colour_palette = get_palette_rgb(image_bytes);
         let colour_palette = get_palette_with_options(
             &image_bytes,
             PixelEncoding::Rgba,
