@@ -73,12 +73,10 @@ pub fn mode(numbers: &[usize]) -> usize {
 
 pub fn min_index(array: &[f32]) -> usize {
     let mut i = 0;
-
     for (j, &value) in array.iter().enumerate() {
         if value < array[i] {
             i = j;
         }
     }
-
     i
 }
