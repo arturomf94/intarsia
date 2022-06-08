@@ -16,6 +16,8 @@ use image::DynamicImage;
 use image::Rgb;
 use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
 use std::process;
+use std::process::Command;
+use std::str::FromStr;
 use std::{fs, path::PathBuf};
 use structopt::StructOpt;
 use strum_macros::EnumString;
@@ -38,7 +40,7 @@ enum ImageType {
 
 struct Image {
     _image_type: ImageType,
-    _path: PathBuf,
+    path: PathBuf,
     image: DynamicImage,
 }
 
@@ -97,6 +99,85 @@ impl Project {
         })
     }
 
+    /// Loads an existing project, given a name. If the project
+    /// does not exist yet it throws an error.
+    fn load(name: &String) -> Result<Project, Error> {
+        // Determine the home directory.
+        let mut path: PathBuf;
+        match dirs::home_dir() {
+            Some(ppb) => {
+                path = ppb;
+            }
+            None => {
+                return Err(Error::External("Could not determine home dir".to_string()));
+            }
+        }
+        path.push(".intarsia/");
+        path.push(format!("{}/", name));
+        // If the project does not exist, throw an error.
+        if !path.as_path().exists() {
+            return Err(Error::DoesNotExist.into());
+        }
+        // Load images
+        let mut original_image_path: PathBuf = path.clone();
+        original_image_path.push("original.png");
+        let original_image = ImageReader::open(&original_image_path)
+            .map_err(|e| Error::External(e.to_string()))?
+            .decode()
+            .map_err(|e| Error::External(e.to_string()))?;
+        let original_image = Some(Image {
+            _image_type: ImageType::Original,
+            path: original_image_path,
+            image: original_image,
+        });
+        let mut processed_image_path: PathBuf = path.clone();
+        processed_image_path.push("processed.png");
+        let processed_image = ImageReader::open(&processed_image_path)
+            .map_err(|e| Error::External(e.to_string()))?
+            .decode()
+            .map_err(|e| Error::External(e.to_string()))?;
+        let processed_image = Some(Image {
+            _image_type: ImageType::Original,
+            path: processed_image_path,
+            image: processed_image,
+        });
+        Ok(Project {
+            name: name.to_string(),
+            path,
+            original_image,
+            processed_image,
+            _instructions: None,
+        })
+    }
+
+    fn show(self, image_type: ImageType) -> Result<(), Error> {
+        let image_file: PathBuf;
+        match image_type {
+            ImageType::Original => {
+                if let Some(image) = self.original_image {
+                    image_file = image.path
+                } else {
+                    return Err(Error::External("Could not load original image".to_string()));
+                }
+                // image_file = self.original_image.expect("err").path;
+            }
+            ImageType::Processed => {
+                if let Some(image) = self.processed_image {
+                    image_file = image.path
+                } else {
+                    return Err(Error::External(
+                        "Could not load processed image".to_string(),
+                    ));
+                }
+            }
+        }
+        Command::new("open")
+            .arg(image_file)
+            .output()
+            .map_err(|e| Error::External(e.to_string()))?;
+        Ok(())
+    }
+
     /// This function removes the current project, if it indeed
     /// exists already.
     fn remove_project(&self) {
@@ -119,7 +200,7 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         self.original_image = Some(Image {
             _image_type: ImageType::Original,
-            _path: path,
+            path: path,
             image,
         });
         Ok(())
@@ -207,7 +288,7 @@ impl Project {
             .map_err(|e| Error::External(e.to_string()))?;
         self.processed_image = Some(Image {
             _image_type: ImageType::Processed,
-            _path: path,
+            path: path,
             image,
         });
         Ok(())
@@ -234,17 +315,25 @@ enum SubCommand {
         #[structopt(short, long)]
         colours: u8,
     },
+    /// Remove an existing project.
     Remove {
-        _name: String,
+        /// Name of the project to be removed.
+        name: String,
     },
+    /// Display an image from the project. It can be either
+    /// the original or the processed image. By default, it
+    /// displays the processed image.
     Show {
-        _name: String,
+        /// Name of the project that will be displayed.
+        name: String,
+        /// The type of the image to be displayed. Options:
+        /// original / processed.
         #[structopt(short, long)]
-        _type: String,
+        r#type: Option<String>,
     },
-    Instructions {
-        _name: String,
-    },
+    // Instructions {
+    //     _name: String,
+    // },
 }
 
 #[derive(StructOpt)]
@@ -294,8 +383,41 @@ fn main() {
                 }
             }
         }
-        _ => {
-            println!("Not implemented.")
+        SubCommand::Remove { name } => {
+            let project = Project::load(&name);
+            match project {
+                Err(err) => {
+                    eprintln!("Could not load existing project. Error: {}", err);
+                    process::exit(1);
+                }
+                Ok(project) => {
+                    project.remove_project();
+                    println!("Succsessfully removed project {}", project.name);
+                }
+            }
+        }
+        SubCommand::Show { name, r#type } => {
+            let type_string = r#type.unwrap_or("processed".to_string());
+            let project = Project::load(&name);
+            match project {
+                Err(err) => {
+                    eprintln!("Could not load existing project. Error: {}", err);
+                    process::exit(1);
+                }
+                Ok(project) => match ImageType::from_str(&type_string.as_str()) {
+                    Ok(image_type) => match project.show(image_type) {
+                        Err(err) => {
+                            eprintln!("Failed to display image. Error: {}", err);
+                            process::exit(1);
+                        }
+                        _ => (),
+                    },
+                    _ => {
+                        eprintln!("Image type {} does not exist. It should be either `original` or `processed`", type_string);
+                        process::exit(1);
+                    }
+                },
+            }
         }
     }
 }
