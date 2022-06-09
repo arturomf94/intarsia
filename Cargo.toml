@@ -17,4 +17,4 @@ strum_macros = "0.20"
 strum = "0.20"
 palette_extract = "0.1.0"
 viuer = "0.6.1"
-plotters = "0.3.1"
+plotters = { git = "https://github.com/arturomf94/plotters.git", branch = "bump-image-version"}
