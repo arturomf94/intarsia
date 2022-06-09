@@ -9,7 +9,7 @@ mod err;
 mod utils;
 
 use crate::err::Error;
-use crate::utils::{add_grid_to_image, colour2rgb, set_closest_colour};
+use crate::utils::{add_grid_to_image, colour2rgb, plot_image_with_axes, set_closest_colour};
 use image::imageops::blur;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
@@ -281,12 +281,18 @@ impl Project {
         image = self
             .reduce_colours(image, colours)
             .map_err(|e| Error::External(e.to_string()))?;
-        add_grid_to_image(&mut image, output_width, output_height);
         let mut path: PathBuf = self.path.clone();
         path.push("processed.png");
+        add_grid_to_image(&mut image, output_width, output_height);
         image
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
+        plot_image_with_axes(
+            self.name.as_str(),
+            path.to_str().unwrap(),
+            path.to_str().unwrap(),
+        )
+        .unwrap();
         self.processed_image = Some(Image {
             _image_type: ImageType::Processed,
             path: path,

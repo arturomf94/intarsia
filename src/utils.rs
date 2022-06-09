@@ -43,13 +43,13 @@ pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height:
     }
 }
 
-pub fn plot_image_with_axes(input_path: &str, output_path: &str) -> Result<(), Error> {
+pub fn plot_image_with_axes(name: &str, input_path: &str, output_path: &str) -> Result<(), Error> {
     let root = BitMapBackend::new(output_path, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)
         .map_err(|e| Error::External(e.to_string()))?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption("Bitmap Example", ("sans-serif", 30))
+        .caption(name, ("sans-serif", 30))
         .margin(5)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
