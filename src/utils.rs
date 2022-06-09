@@ -1,11 +1,17 @@
 extern crate image;
 extern crate imageproc;
 extern crate palette_extract;
+extern crate plotters;
 
+use crate::err::Error;
 use image::DynamicImage;
+use image::{imageops::FilterType, ImageFormat};
 use image::{Pixel, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use palette_extract::Color;
+use plotters::prelude::*;
+use std::fs::File;
+use std::io::BufReader;
 
 /// Function to draw a grid over the pixels of an image.
 /// The grid size is determined by the width and height inputs,
@@ -35,6 +41,44 @@ pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height:
             black,
         );
     }
+}
+
+pub fn plot_image_with_axes(input_path: &str, output_path: &str) -> Result<(), Error> {
+    let root = BitMapBackend::new(output_path, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)
+        .map_err(|e| Error::External(e.to_string()))?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption("Bitmap Example", ("sans-serif", 30))
+        .margin(5)
+        .set_label_area_size(LabelAreaPosition::Left, 40)
+        .set_label_area_size(LabelAreaPosition::Bottom, 40)
+        .build_cartesian_2d(0.0..1.0, 0.0..1.0)
+        .map_err(|e| Error::External(e.to_string()))?;
+
+    chart
+        .configure_mesh()
+        .disable_mesh()
+        .draw()
+        .map_err(|e| Error::External(e.to_string()))?;
+
+    let (w, h) = chart.plotting_area().dim_in_pixel();
+    let image = image::load(
+        BufReader::new(File::open(input_path).map_err(|e| Error::External(e.to_string()))?),
+        ImageFormat::Png,
+    )
+    .map_err(|e| Error::External(e.to_string()))?
+    .resize_exact(w - w / 10, h - h / 10, FilterType::Nearest);
+
+    let elem: BitMapElement<_> = ((0.05, 0.95), image).into();
+
+    chart
+        .draw_series(std::iter::once(elem))
+        .map_err(|e| Error::External(e.to_string()))?;
+    // To avoid the IO failure being ignored silently, we manually call the present function
+    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    println!("Result has been saved to {}", output_path);
+    Ok(())
 }
 
 /// Convert a `Color` instance from `palette_extract` crate into

@@ -3,6 +3,7 @@ extern crate dirs;
 extern crate image;
 extern crate imageproc;
 extern crate palette_extract;
+extern crate plotters;
 extern crate strum_macros;
 mod err;
 mod utils;
