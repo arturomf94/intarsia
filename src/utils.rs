@@ -56,7 +56,7 @@ pub fn plot_image_with_axes(
     .map_err(|e| Error::External(e.to_string()))?;
     let width = image.width();
     let height = image.height();
-    let root = BitMapBackend::new(output_path, (width + 50, height + 51)).into_drawing_area();
+    let root = BitMapBackend::new(output_path, (width + 50, height + 50)).into_drawing_area();
     root.fill(&WHITE)
         .map_err(|e| Error::External(e.to_string()))?;
 
