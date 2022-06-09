@@ -255,12 +255,15 @@ impl Project {
     ///     `reduce_colours` function.
     /// 4. Adding a grid to the image by calling the
     ///     `add_grid_to_image` function.
+    /// 5. (Optionally) Adding a Cartesian map to the processed
+    ///     image.
     /// Finally, it stores the output in the project path.
     fn transform_image(
         &mut self,
         output_width: u32,
         output_height: u32,
         colours: u8,
+        add_axes: bool,
     ) -> Result<(), Error> {
         let mut image = self.original_image.as_ref().unwrap().image.clone();
         let width = image.width();
@@ -287,13 +290,15 @@ impl Project {
         image
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
-        plot_image_with_axes(
-            path.to_str().unwrap(),
-            path.to_str().unwrap(),
-            output_width,
-            output_height,
-        )
-        .unwrap();
+        if add_axes {
+            plot_image_with_axes(
+                path.to_str().unwrap(),
+                path.to_str().unwrap(),
+                output_width,
+                output_height,
+            )
+            .unwrap();
+        }
         self.processed_image = Some(Image {
             _image_type: ImageType::Processed,
             path: path,
@@ -322,6 +327,9 @@ enum SubCommand {
         /// The number of colours in the output image.
         #[structopt(short, long)]
         colours: u8,
+        /// Whether the output should have axes or not
+        #[structopt(short, long)]
+        axes: Option<bool>,
     },
     /// Remove an existing project.
     Remove {
@@ -360,8 +368,10 @@ fn main() {
             width,
             height,
             colours,
+            axes,
         } => {
             let project = Project::new(&name);
+            let axes_bool = axes.unwrap_or(true);
             match project {
                 Err(err) => {
                     eprintln!("Could not create new project. Error: {}", err);
@@ -376,7 +386,7 @@ fn main() {
                         }
                         _ => (),
                     }
-                    match project.transform_image(width, height, colours) {
+                    match project.transform_image(width, height, colours, axes_bool) {
                         Err(err) => {
                             eprintln!("Could not transform image. Error: {}", err);
                             project.remove_project();

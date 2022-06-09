@@ -43,6 +43,10 @@ pub fn add_grid_to_image(image: &mut DynamicImage, grid_width: u32, grid_height:
     }
 }
 
+/// Function that adds Cartesian axes to an (already saved)
+/// image. The function should recieve the paths for both the
+/// input image and output image, along with the grid dimensions
+/// that determine the Cartesian map.
 pub fn plot_image_with_axes(
     input_path: &str,
     output_path: &str,
@@ -56,34 +60,24 @@ pub fn plot_image_with_axes(
     .map_err(|e| Error::External(e.to_string()))?;
     let width = image.width();
     let height = image.height();
-    let root = BitMapBackend::new(output_path, (width + 50, height + 50)).into_drawing_area();
+    let root = BitMapBackend::new(output_path, (width + 64, height + 64)).into_drawing_area();
     root.fill(&WHITE)
         .map_err(|e| Error::External(e.to_string()))?;
-
     let mut chart = ChartBuilder::on(&root)
-        // .caption(name, ("sans-serif", 50))
-        // .margin(5)
-        .set_label_area_size(LabelAreaPosition::Left, 50)
-        .set_label_area_size(LabelAreaPosition::Bottom, 50)
-        .build_cartesian_2d(0.0..(grid_width as f32), 0.0..(grid_height as f32))
+        .set_label_area_size(LabelAreaPosition::Left, 64)
+        .set_label_area_size(LabelAreaPosition::Bottom, 64)
+        .build_cartesian_2d(0..grid_width, 0..grid_height)
         .map_err(|e| Error::External(e.to_string()))?;
-
     chart
         .configure_mesh()
         .disable_mesh()
         .draw()
         .map_err(|e| Error::External(e.to_string()))?;
-
-    // let (w, h) = chart.plotting_area().dim_in_pixel();
-
-    let elem: BitMapElement<_> = ((0.0, 100.0), image).into();
-
+    let elem: BitMapElement<_> = ((0, 100), image).into();
     chart
         .draw_series(std::iter::once(elem))
         .map_err(|e| Error::External(e.to_string()))?;
-    // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-    println!("Result has been saved to {}", output_path);
+    root.present().map_err(|e| Error::External(e.to_string()))?;
     Ok(())
 }
 
