@@ -327,7 +327,8 @@ enum SubCommand {
         /// The number of colours in the output image.
         #[structopt(short, long)]
         colours: u8,
-        /// Whether the output should have axes or not
+        /// (Optional) Whether the output should have axes or
+        /// not. Options: true / false.
         #[structopt(short, long)]
         axes: Option<bool>,
     },
