@@ -288,9 +288,10 @@ impl Project {
             .save(&path)
             .map_err(|e| Error::External(e.to_string()))?;
         plot_image_with_axes(
-            self.name.as_str(),
             path.to_str().unwrap(),
             path.to_str().unwrap(),
+            output_width,
+            output_height,
         )
         .unwrap();
         self.processed_image = Some(Image {
