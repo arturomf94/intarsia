@@ -73,7 +73,7 @@ pub fn plot_image_with_axes(
         .disable_mesh()
         .draw()
         .map_err(|e| Error::External(e.to_string()))?;
-    let elem: BitMapElement<_> = ((0, 100), image).into();
+    let elem: BitMapElement<_> = ((0, grid_height), image).into();
     chart
         .draw_series(std::iter::once(elem))
         .map_err(|e| Error::External(e.to_string()))?;
