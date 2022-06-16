@@ -113,19 +113,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chrono"
-version = "0.4.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
-dependencies = [
- "libc",
- "num-integer",
- "num-traits",
- "time",
- "winapi",
-]
-
-[[package]]
 name = "clap"
 version = "2.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1057,9 +1044,8 @@ checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
 [[package]]
 name = "plotters"
 version = "0.3.1"
-source = "git+https://github.com/arturomf94/plotters.git?branch=bump-image-version#a1c268c02c64bebee9d6efa3debf25fa1bf3e2d0"
+source = "git+https://github.com/plotters-rs/plotters.git#a72bfbced3523b17adc974ec7459f6c1c6f2d986"
 dependencies = [
- "chrono",
  "font-kit",
  "image 0.24.2",
  "lazy_static",
@@ -1067,7 +1053,6 @@ dependencies = [
  "pathfinder_geometry",
  "plotters-backend",
  "plotters-bitmap",
- "plotters-svg",
  "ttf-parser 0.15.1",
  "wasm-bindgen",
  "web-sys",
@@ -1085,17 +1070,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21362fa905695e5618aefd169358f52e0e8bc4a8e05333cf780fda8cddc00b54"
 dependencies = [
- "gif",
  "image 0.23.14",
- "plotters-backend",
-]
-
-[[package]]
-name = "plotters-svg"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "521fa9638fa597e1dc53e9412a4f9cefb01187ee1f7413076f9e6749e2885ba9"
-dependencies = [
  "plotters-backend",
 ]
 
@@ -1553,17 +1528,6 @@ dependencies = [
  "flate2",
  "jpeg-decoder 0.2.4",
  "weezl",
-]
-
-[[package]]
-name = "time"
-version = "0.1.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
 ]
 
 [[package]]
