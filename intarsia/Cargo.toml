@@ -6,15 +6,10 @@ edition = "2021"
 
 
 [dependencies]
-structopt = "0.3.26"
-clap-verbosity-flag = "0.3.1"
-log = "0.4.14"
 dirs = "3.0.2"
 image = "0.24.2"
 imageproc = "0.23.0"
 thiserror = "1"
-strum_macros = "0.20"
-strum = "0.20"
 palette_extract = "0.1.0"
 viuer = "0.6.1"
 plotters = { git = "https://github.com/plotters-rs/plotters.git", default_features = false, features = [
