@@ -296,11 +296,13 @@ impl Intarsia {
 mod tests {
     use super::*;
     #[test]
-    fn build_new() {
+    fn read_and_remove() {
+        // remove project path if it already exists
         let test_project_path = PathBuf::from_str("test_data/test_proj/").unwrap();
         if test_project_path.exists() {
             fs::remove_dir_all(&test_project_path).unwrap();
         }
+        // create new project
         let test_proj = Intarsia::new(
             &"test_proj".to_owned(),
             "test_data/test_image.png",
@@ -312,5 +314,6 @@ mod tests {
         );
         assert!(test_proj.is_ok());
         test_proj.unwrap().remove_project();
+        assert!(!test_project_path.exists());
     }
 }
