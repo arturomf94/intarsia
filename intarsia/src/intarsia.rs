@@ -11,17 +11,20 @@ use std::process::Command;
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 
+#[derive(Debug)]
 pub enum ImageType {
     Original,
     Processed,
 }
 
+#[derive(Debug)]
 pub struct Image {
     pub _image_type: ImageType,
     pub path: PathBuf,
     pub image: DynamicImage,
 }
 
+#[derive(Debug)]
 pub struct Instructions {
     /// This is the text with the instructions.
     /// TODO: Add functionality so that these instructions can
@@ -31,6 +34,7 @@ pub struct Instructions {
 
 /// Represents a project instance. This holds information about
 /// its name, where its data is stored, and the images
+#[derive(Debug)]
 pub struct Intarsia {
     /// The name of this project.
     pub name: String,
@@ -54,11 +58,11 @@ impl Intarsia {
         output_height: u32,
         colours: u8,
         add_axes: bool,
-        full_path: Option<&str>,
+        projects_path: Option<&str>,
     ) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
-        if let Some(full_path) = full_path {
-            path = PathBuf::from_str(full_path).map_err(|e| Error::External(e.to_string()))?;
+        if let Some(projects_path) = projects_path {
+            path = PathBuf::from_str(projects_path).map_err(|e| Error::External(e.to_string()))?;
         } else {
             path = dirs::home_dir().expect("Could not determine HOME directory!");
             path.push(".intarsia/");
@@ -86,19 +90,16 @@ impl Intarsia {
 
     /// Loads an existing project, given a name. If the project
     /// does not exist yet it throws an error.
-    pub fn load(name: &String) -> Result<Intarsia, Error> {
-        // Determine the home directory.
+    pub fn load(name: &str, projects_path: Option<&str>) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
-        match dirs::home_dir() {
-            Some(ppb) => {
-                path = ppb;
-            }
-            None => {
-                return Err(Error::External("Could not determine home dir".to_string()));
-            }
+        if let Some(projects_path) = projects_path {
+            path = PathBuf::from_str(projects_path).map_err(|e| Error::External(e.to_string()))?;
+            path.push(format!("{}/", name));
+        } else {
+            path = dirs::home_dir().expect("Could not determine HOME directory!");
+            path.push(".intarsia/");
+            path.push(format!("{}/", name));
         }
-        path.push(".intarsia/");
-        path.push(format!("{}/", name));
         // If the project does not exist, throw an error.
         if !path.as_path().exists() {
             return Err(Error::DoesNotExist.into());
@@ -295,16 +296,40 @@ impl Intarsia {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::err::Error;
+    #[test]
+    fn image_does_not_exist() {
+        // remove project path if it already exists
+        let test_project_path = PathBuf::from_str("test_data/test_file_does_not_exist/").unwrap();
+        if test_project_path.exists() {
+            fs::remove_dir_all(&test_project_path).unwrap();
+        }
+        // fail if the image does not exist
+        let test_new = Intarsia::new(
+            &"test_file_does_not_exist".to_owned(),
+            "test_data/fake_image.png",
+            5,
+            5,
+            2,
+            true,
+            Some("test_data/"),
+        );
+        assert!(test_new.is_err());
+        assert_eq!(
+            test_new.unwrap_err(),
+            Error::External("No such file or directory (os error 2)".to_owned())
+        );
+    }
     #[test]
     fn create_and_remove() {
         // remove project path if it already exists
-        let test_project_path = PathBuf::from_str("test_data/test_proj/").unwrap();
+        let test_project_path = PathBuf::from_str("test_data/test_new/").unwrap();
         if test_project_path.exists() {
             fs::remove_dir_all(&test_project_path).unwrap();
         }
         // create new project
-        let test_proj = Intarsia::new(
-            &"test_proj".to_owned(),
+        let test_new = Intarsia::new(
+            &"test_new".to_owned(),
             "test_data/test_image.png",
             5,
             5,
@@ -312,8 +337,13 @@ mod tests {
             true,
             Some("test_data/"),
         );
-        assert!(test_proj.is_ok());
-        test_proj.unwrap().remove_project();
+        assert!(test_new.is_ok());
+        test_new.unwrap().remove_project();
         assert!(!test_project_path.exists());
+    }
+    #[test]
+    fn load() {
+        let test_load = Intarsia::load("test_load", Some("test_data/"));
+        assert!(test_load.is_ok());
     }
 }
