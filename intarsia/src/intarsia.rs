@@ -8,6 +8,7 @@ use image::DynamicImage;
 use image::Rgb;
 use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
 use std::process::Command;
+use std::str::FromStr;
 use std::{fs, path::PathBuf};
 
 pub enum ImageType {
@@ -53,11 +54,11 @@ impl Intarsia {
         output_height: u32,
         colours: u8,
         add_axes: bool,
-        full_path: Option<PathBuf>,
+        full_path: Option<&str>,
     ) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
-        if let Some(full_path_buf) = full_path {
-            path = full_path_buf;
+        if let Some(full_path) = full_path {
+            path = PathBuf::from_str(full_path).map_err(|e| Error::External(e.to_string()))?;
         } else {
             path = dirs::home_dir().expect("Could not determine HOME directory!");
             path.push(".intarsia/");
@@ -294,13 +295,9 @@ impl Intarsia {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
     #[test]
     fn build_new() {
-        let mut test_path = env::current_dir().unwrap();
-        test_path.push("test_data");
-        let mut test_project_path = test_path.clone();
-        test_project_path.push("test_proj");
+        let test_project_path = PathBuf::from_str("test_data/test_proj/").unwrap();
         if test_project_path.exists() {
             fs::remove_dir_all(&test_project_path).unwrap();
         }
@@ -311,7 +308,7 @@ mod tests {
             5,
             2,
             true,
-            Some(test_path),
+            Some("test_data/"),
         );
         assert!(test_proj.is_ok());
         test_proj.unwrap().remove_project();
