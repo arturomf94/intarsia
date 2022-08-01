@@ -1,8 +1,3 @@
-extern crate image;
-extern crate imageproc;
-extern crate palette_extract;
-extern crate plotters;
-
 use crate::err::Error;
 use image::DynamicImage;
 use image::ImageFormat;

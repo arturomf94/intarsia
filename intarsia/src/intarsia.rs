@@ -1,12 +1,5 @@
-extern crate clap_verbosity_flag;
-extern crate dirs;
-extern crate image;
-extern crate imageproc;
-extern crate palette_extract;
-extern crate plotters;
-extern crate strum_macros;
-use super::err::Error;
-use super::utils::{add_grid_to_image, colour2rgb, plot_image_with_axes, set_closest_colour};
+use crate::err::Error;
+use crate::utils::{add_grid_to_image, colour2rgb, plot_image_with_axes, set_closest_colour};
 
 use image::imageops::blur;
 use image::imageops::FilterType;
