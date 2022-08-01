@@ -296,7 +296,7 @@ impl Intarsia {
 mod tests {
     use super::*;
     #[test]
-    fn read_and_remove() {
+    fn create_and_remove() {
         // remove project path if it already exists
         let test_project_path = PathBuf::from_str("test_data/test_proj/").unwrap();
         if test_project_path.exists() {
