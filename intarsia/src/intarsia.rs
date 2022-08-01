@@ -9,68 +9,59 @@ use image::Rgb;
 use palette_extract::{get_palette_with_options, MaxColors, PixelEncoding, PixelFilter, Quality};
 use std::process::Command;
 use std::{fs, path::PathBuf};
-use structopt::StructOpt;
-use strum_macros::EnumString;
 
-const WELCOME_MSG: &str = "
-'||' '|.   '|' |''||''|     |     '||''|.    .|'''.|  '||'     |     
- ||   |'|   |     ||       |||     ||   ||   ||..  '   ||     |||    
- ||   | '|. |     ||      |  ||    ||''|'     ''|||.   ||    |  ||   
- ||   |   |||     ||     .''''|.   ||   |.  .     '||  ||   .''''|.  
-.||. .|.   '|    .||.   .|.  .||. .||.  '|' |'....|'  .||. .|.  .||. 
-";
-
-#[derive(EnumString)]
-enum ImageType {
-    #[strum(serialize = "original")]
+pub enum ImageType {
     Original,
-    #[strum(serialize = "processed")]
     Processed,
 }
 
-struct Image {
-    _image_type: ImageType,
-    path: PathBuf,
-    image: DynamicImage,
+pub struct Image {
+    pub _image_type: ImageType,
+    pub path: PathBuf,
+    pub image: DynamicImage,
 }
 
-struct Instructions {
+pub struct Instructions {
     /// This is the text with the instructions.
     /// TODO: Add functionality so that these instructions can
     /// be read from a given point within the project.
-    _text: String,
+    pub _text: String,
 }
 
 /// Represents a project instance. This holds information about
 /// its name, where its data is stored, and the images
-struct Project {
+pub struct Intarsia {
     /// The name of this project.
-    name: String,
+    pub name: String,
     /// The path to the project files.
-    path: PathBuf,
+    pub path: PathBuf,
     /// Original image.
-    original_image: Option<Image>,
+    pub original_image: Option<Image>,
     /// Processed image.
-    processed_image: Option<Image>,
+    pub processed_image: Option<Image>,
     /// The instructions for this crochet project.
-    _instructions: Option<Instructions>,
+    pub _instructions: Option<Instructions>,
 }
 
-impl Project {
+impl Intarsia {
     /// Creates a new instance of a project, with a given name
     /// and path.
-    fn new(name: &String) -> Result<Project, Error> {
-        // Determine the home directory.
+    pub fn new(
+        name: &String,
+        image_path: &str,
+        output_width: u32,
+        output_height: u32,
+        colours: u8,
+        add_axes: bool,
+        full_path: Option<PathBuf>,
+    ) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
-        match dirs::home_dir() {
-            Some(ppb) => {
-                path = ppb;
-            }
-            None => {
-                return Err(Error::External("Could not determine home dir".to_string()));
-            }
+        if let Some(full_path_buf) = full_path {
+            path = full_path_buf;
+        } else {
+            path = dirs::home_dir().expect("Could not determine HOME directory!");
+            path.push(".intarsia/");
         }
-        path.push(".intarsia/");
         if !path.as_path().exists() {
             fs::create_dir(path.as_path()).map_err(|e| Error::External(e.to_string()))?;
         }
@@ -80,18 +71,21 @@ impl Project {
             return Err(Error::ExistsAlready.into());
         }
         fs::create_dir(path.as_path()).map_err(|e| Error::External(e.to_string()))?;
-        Ok(Project {
+        let mut new_obj = Intarsia {
             name: name.to_string(),
             path,
             original_image: None,
             processed_image: None,
             _instructions: None,
-        })
+        };
+        new_obj.read_image(image_path)?;
+        new_obj.transform_image(output_width, output_height, colours, add_axes)?;
+        Ok(new_obj)
     }
 
     /// Loads an existing project, given a name. If the project
     /// does not exist yet it throws an error.
-    fn load(name: &String) -> Result<Project, Error> {
+    pub fn load(name: &String) -> Result<Intarsia, Error> {
         // Determine the home directory.
         let mut path: PathBuf;
         match dirs::home_dir() {
@@ -131,7 +125,7 @@ impl Project {
             path: processed_image_path,
             image: processed_image,
         });
-        Ok(Project {
+        Ok(Intarsia {
             name: name.to_string(),
             path,
             original_image,
@@ -140,7 +134,7 @@ impl Project {
         })
     }
 
-    fn show(self, image_type: ImageType) -> Result<(), Error> {
+    pub fn show(self, image_type: ImageType) -> Result<(), Error> {
         let image_file: PathBuf;
         match image_type {
             ImageType::Original => {
@@ -170,7 +164,7 @@ impl Project {
 
     /// This function removes the current project, if it indeed
     /// exists already.
-    fn remove_project(&self) {
+    pub fn remove_project(&self) {
         if self.path.exists() {
             fs::remove_dir_all(self.path.as_path()).unwrap();
         }
@@ -178,7 +172,7 @@ impl Project {
 
     /// Reads a new image, given a file-path string, and saves
     /// it in the project folder under the name `original.png`.
-    fn read_image(&mut self, image: String) -> Result<(), Error> {
+    fn read_image(&mut self, image: &str) -> Result<(), Error> {
         let image = ImageReader::open(&image)
             .map_err(|e| Error::External(e.to_string()))?
             .decode()
@@ -297,54 +291,29 @@ impl Project {
     }
 }
 
-#[derive(StructOpt)]
-enum SubCommand {
-    /// Create a new project.
-    New {
-        /// The name of this new project.
-        name: String,
-        /// The (absolute) path to the image that will serve as
-        /// the basis for this new projct.
-        #[structopt(short, long)]
-        image: String,
-        /// The width of the output image.
-        #[structopt(short, long)]
-        width: u32,
-        /// The height of the output image.
-        #[structopt(short, long)]
-        height: u32,
-        /// The number of colours in the output image.
-        #[structopt(short, long)]
-        colours: u8,
-        /// (Optional) Whether the output should have axes or
-        /// not. Options: true / false.
-        #[structopt(short, long)]
-        axes: Option<bool>,
-    },
-    /// Remove an existing project.
-    Remove {
-        /// Name of the project to be removed.
-        name: String,
-    },
-    /// Display an image from the project. It can be either
-    /// the original or the processed image. By default, it
-    /// displays the processed image.
-    Show {
-        /// Name of the project that will be displayed.
-        name: String,
-        /// The type of the image to be displayed. Options:
-        /// original / processed.
-        #[structopt(short, long)]
-        r#type: Option<String>,
-    },
-    // Instructions {
-    //     _name: String,
-    // },
-}
-
-#[derive(StructOpt)]
-#[structopt(about = WELCOME_MSG)]
-struct Intarsia {
-    #[structopt(subcommand)]
-    cmd: SubCommand,
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    #[test]
+    fn build_new() {
+        let mut test_path = env::current_dir().unwrap();
+        test_path.push("test_data");
+        let mut test_project_path = test_path.clone();
+        test_project_path.push("test_proj");
+        if test_project_path.exists() {
+            fs::remove_dir_all(&test_project_path).unwrap();
+        }
+        let test_proj = Intarsia::new(
+            &"test_proj".to_owned(),
+            "test_data/test_image.png",
+            5,
+            5,
+            2,
+            true,
+            Some(test_path),
+        );
+        assert!(test_proj.is_ok());
+        test_proj.unwrap().remove_project();
+    }
 }
