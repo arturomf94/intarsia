@@ -31,14 +31,6 @@ pub struct Image {
     pub image: DynamicImage,
 }
 
-#[derive(Debug)]
-pub struct Instructions {
-    /// This is the text with the instructions.
-    /// TODO: Add functionality so that these instructions can
-    /// be read from a given point within the project.
-    pub _text: String,
-}
-
 /// Represents a project instance. This holds information about
 /// its name, where its data is stored, and the images
 #[derive(Debug)]
@@ -51,8 +43,6 @@ pub struct Intarsia {
     pub original_image: Option<Image>,
     /// Processed image.
     pub processed_image: Option<Image>,
-    /// The instructions for this crochet project.
-    pub _instructions: Option<Instructions>,
 }
 
 impl Intarsia {
@@ -88,7 +78,6 @@ impl Intarsia {
             path,
             original_image: None,
             processed_image: None,
-            _instructions: None,
         };
         new_obj.read_image(image_path)?;
         new_obj.transform_image(output_width, output_height, colours, add_axes)?;
@@ -139,7 +128,6 @@ impl Intarsia {
             path,
             original_image,
             processed_image,
-            _instructions: None,
         })
     }
 
