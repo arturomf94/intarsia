@@ -11,12 +11,19 @@ use std::process::Command;
 use std::str::FromStr;
 use std::{fs, path::PathBuf};
 
+/// Represents the type of a given image. It could either be the
+/// original image or the processed image.
 #[derive(Debug)]
 pub enum ImageType {
     Original,
     Processed,
 }
 
+/// Represents an image. This struct holds information about the
+/// image type ([`ImageType`]) of a given image, the path
+/// ([`std::path::PathBuf`]) where it is located and the actual
+/// image data ([`image::DynamicImage`]).
+/// Note that the image type is currently not being used.
 #[derive(Debug)]
 pub struct Image {
     pub _image_type: ImageType,
