@@ -20,19 +20,22 @@ pub enum ImageType {
 }
 
 /// Represents an image. This struct holds information about the
-/// image type ([`ImageType`]) of a given image, the path
-/// ([`std::path::PathBuf`]) where it is located and the actual
-/// image data ([`image::DynamicImage`]).
-/// Note that the image type is currently not being used.
+/// type, the path where it's stored and the actual data.
+///
+/// *Note that the image type is currently not being used.*
 #[derive(Debug)]
 pub struct Image {
+    /// The image type of this image.
     pub _image_type: ImageType,
+    /// The path where this image is located.
     pub path: PathBuf,
+    /// The actual data of this image.
     pub data: DynamicImage,
 }
 
 /// Represents a project instance. This holds information about
-/// its name, where its data is stored, and the images
+/// its name, where its data is stored, and both the original
+/// and the processed image.
 #[derive(Debug)]
 pub struct Intarsia {
     /// The name of this project.
@@ -46,8 +49,16 @@ pub struct Intarsia {
 }
 
 impl Intarsia {
-    /// Creates a new instance of a project, with a given name
-    /// and path.
+    /// Creates a new instance of a project, given a specific
+    /// file-path where the image is located. This function
+    /// receives a number of parameters that determines the
+    /// processed image. Namely, `output_width`: the number of
+    /// squares in the x-axis; `output_height`: the number of
+    /// suquares in the y-axis; `colours`: the number of colours
+    /// in the output image; `add_axes`: a boolean, indicating
+    /// whether to add axes to the output image or not; finally,
+    /// `projects_path`: an optional variable to indicate
+    /// where the project should be stored.
     pub fn new(
         name: &String,
         image_path: &str,
@@ -85,7 +96,10 @@ impl Intarsia {
     }
 
     /// Loads an existing project, given a name. If the project
-    /// does not exist yet it throws an error.
+    /// does not exist yet it throws an error. The input
+    /// `projects_path` is optional, and it indicates where the
+    /// project is stored. By default, this is set to
+    /// `.intarsia/`.
     pub fn load(name: &str, projects_path: Option<&str>) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
         if let Some(projects_path) = projects_path {
@@ -131,6 +145,13 @@ impl Intarsia {
         })
     }
 
+    /// This function displays a given image (either the
+    /// original or the processed) by running the `open` command
+    /// in the execution environment.
+    ///
+    /// **Note that this function will not work if the**
+    /// **execution environment does not support the `open`**
+    /// **command.**
     pub fn show(self, image_type: ImageType) -> Result<(), Error> {
         let image_file: PathBuf;
         match image_type {
@@ -186,9 +207,9 @@ impl Intarsia {
         Ok(())
     }
 
-    // Reduces the number of colours (i.e. "quantizes") an image
-    // with the number of desired colours and image dimensions
-    // as parameters.
+    /// Reduces the number of colours (i.e. "quantizes") an image
+    /// with the number of desired colours and image dimensions
+    /// as parameters.
     fn reduce_colours(&self, image: DynamicImage, colours: u8) -> Result<DynamicImage, Error> {
         let mut input_path: PathBuf = self.path.clone();
         input_path.push("quantization_input.png");
