@@ -70,20 +70,21 @@ impl Intarsia {
     ) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
         if let Some(projects_path) = projects_path {
-            path = PathBuf::from_str(projects_path).map_err(|e| Error::External(e.to_string()))?;
+            path = PathBuf::from_str(projects_path)
+                .map_err(|e| Error::InvalidProjectPath(e.to_string()))?;
         } else {
             path = dirs::home_dir().expect("Could not determine HOME directory!");
             path.push(".intarsia/");
         }
         if !path.as_path().exists() {
-            fs::create_dir(path.as_path()).map_err(|e| Error::External(e.to_string()))?;
+            fs::create_dir(path.as_path()).map_err(|e| Error::Generic(e.to_string()))?;
         }
         path.push(format!("{}/", name));
         // Throw error if path already exists
         if path.as_path().exists() {
             return Err(Error::ExistsAlready.into());
         }
-        fs::create_dir(path.as_path()).map_err(|e| Error::External(e.to_string()))?;
+        fs::create_dir(path.as_path()).map_err(|e| Error::Generic(e.to_string()))?;
         let mut new_obj = Intarsia {
             name: name.to_string(),
             path,
@@ -103,7 +104,8 @@ impl Intarsia {
     pub fn load(name: &str, projects_path: Option<&str>) -> Result<Intarsia, Error> {
         let mut path: PathBuf;
         if let Some(projects_path) = projects_path {
-            path = PathBuf::from_str(projects_path).map_err(|e| Error::External(e.to_string()))?;
+            path = PathBuf::from_str(projects_path)
+                .map_err(|e| Error::InvalidProjectPath(e.to_string()))?;
             path.push(format!("{}/", name));
         } else {
             path = dirs::home_dir().expect("Could not determine HOME directory!");
@@ -118,9 +120,9 @@ impl Intarsia {
         let mut original_image_path: PathBuf = path.clone();
         original_image_path.push("original.png");
         let original_image = ImageReader::open(&original_image_path)
-            .map_err(|e| Error::External(e.to_string()))?
+            .map_err(|e| Error::Generic(e.to_string()))?
             .decode()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::DecodingError(e.to_string()))?;
         let original_image = Some(Image {
             _image_type: ImageType::Original,
             path: original_image_path,
@@ -129,9 +131,9 @@ impl Intarsia {
         let mut processed_image_path: PathBuf = path.clone();
         processed_image_path.push("processed.png");
         let processed_image = ImageReader::open(&processed_image_path)
-            .map_err(|e| Error::External(e.to_string()))?
+            .map_err(|e| Error::Generic(e.to_string()))?
             .decode()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::DecodingError(e.to_string()))?;
         let processed_image = Some(Image {
             _image_type: ImageType::Original,
             path: processed_image_path,
@@ -159,23 +161,21 @@ impl Intarsia {
                 if let Some(image) = self.original_image {
                     image_file = image.path
                 } else {
-                    return Err(Error::External("Could not load original image".to_string()));
+                    return Err(Error::EmptyOriginal);
                 }
             }
             ImageType::Processed => {
                 if let Some(image) = self.processed_image {
                     image_file = image.path
                 } else {
-                    return Err(Error::External(
-                        "Could not load processed image".to_string(),
-                    ));
+                    return Err(Error::EmptyProcessed);
                 }
             }
         }
         Command::new("open")
             .arg(image_file)
             .output()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::OpenFailure(e.to_string()))?;
         Ok(())
     }
 
@@ -191,14 +191,14 @@ impl Intarsia {
     /// it in the project folder under the name `original.png`.
     fn read_image(&mut self, image: &str) -> Result<(), Error> {
         let image = ImageReader::open(&image)
-            .map_err(|e| Error::External(e.to_string()))?
+            .map_err(|e| Error::Generic(e.to_string()))?
             .decode()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::DecodingError(e.to_string()))?;
         let mut path: PathBuf = self.path.clone();
         path.push("original.png");
         image
             .save(&path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         self.original_image = Some(Image {
             _image_type: ImageType::Original,
             path,
@@ -215,11 +215,11 @@ impl Intarsia {
         input_path.push("quantization_input.png");
         image
             .save(&input_path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         let image = ImageReader::open(&input_path)
-            .map_err(|e| Error::External(e.to_string()))?
+            .map_err(|e| Error::Generic(e.to_string()))?
             .decode()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::DecodingError(e.to_string()))?;
         let image_bytes = image.as_bytes();
         let colour_palette = get_palette_with_options(
             &image_bytes,
@@ -237,13 +237,13 @@ impl Intarsia {
         quantized_path.push("quantized.png");
         quantized_image
             .save(&quantized_path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         let mut output_path: PathBuf = self.path.clone();
         output_path.push("quantized.png");
         let output_image = ImageReader::open(&output_path)
-            .map_err(|e| Error::External(e.to_string()))?
+            .map_err(|e| Error::Generic(e.to_string()))?
             .decode()
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::DecodingError(e.to_string()))?;
         Ok(output_image)
     }
 
@@ -274,22 +274,22 @@ impl Intarsia {
         path.push("resized_down.png");
         image
             .save(&path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         image = image.resize_exact(width, height, FilterType::Nearest);
         let mut path: PathBuf = self.path.clone();
         path.push("resized_up.png");
         image
             .save(&path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         image = self
             .reduce_colours(image, colours)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::ColourReductionErr(e.to_string()))?;
         let mut path: PathBuf = self.path.clone();
         path.push("processed.png");
         add_grid_to_image(&mut image, output_width, output_height);
         image
             .save(&path)
-            .map_err(|e| Error::External(e.to_string()))?;
+            .map_err(|e| Error::Generic(e.to_string()))?;
         if add_axes {
             plot_image_with_axes(
                 path.to_str().unwrap(),
@@ -332,7 +332,7 @@ mod tests {
         assert!(test_new.is_err());
         assert_eq!(
             test_new.unwrap_err(),
-            Error::External("No such file or directory (os error 2)".to_owned())
+            Error::Generic("No such file or directory (os error 2)".to_owned())
         );
     }
     #[test]

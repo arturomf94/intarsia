@@ -49,30 +49,31 @@ pub fn plot_image_with_axes(
     grid_height: u32,
 ) -> Result<(), Error> {
     let image = image::load(
-        BufReader::new(File::open(input_path).map_err(|e| Error::External(e.to_string()))?),
+        BufReader::new(File::open(input_path).map_err(|e| Error::Generic(e.to_string()))?),
         ImageFormat::Png,
     )
-    .map_err(|e| Error::External(e.to_string()))?;
+    .map_err(|e| Error::Generic(e.to_string()))?;
     let width = image.width();
     let height = image.height();
     let root = BitMapBackend::new(output_path, (width + 64, height + 64)).into_drawing_area();
     root.fill(&WHITE)
-        .map_err(|e| Error::External(e.to_string()))?;
+        .map_err(|e| Error::PlotterError(e.to_string()))?;
     let mut chart = ChartBuilder::on(&root)
         .set_label_area_size(LabelAreaPosition::Left, 64)
         .set_label_area_size(LabelAreaPosition::Bottom, 64)
         .build_cartesian_2d(0..grid_width, 0..grid_height)
-        .map_err(|e| Error::External(e.to_string()))?;
+        .map_err(|e| Error::PlotterError(e.to_string()))?;
     chart
         .configure_mesh()
         .disable_mesh()
         .draw()
-        .map_err(|e| Error::External(e.to_string()))?;
+        .map_err(|e| Error::PlotterError(e.to_string()))?;
     let elem: BitMapElement<_> = ((0, grid_height), image).into();
     chart
         .draw_series(std::iter::once(elem))
-        .map_err(|e| Error::External(e.to_string()))?;
-    root.present().map_err(|e| Error::External(e.to_string()))?;
+        .map_err(|e| Error::PlotterError(e.to_string()))?;
+    root.present()
+        .map_err(|e| Error::PlotterError(e.to_string()))?;
     Ok(())
 }
 
