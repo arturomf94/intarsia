@@ -28,7 +28,7 @@ pub enum ImageType {
 pub struct Image {
     pub _image_type: ImageType,
     pub path: PathBuf,
-    pub image: DynamicImage,
+    pub data: DynamicImage,
 }
 
 /// Represents a project instance. This holds information about
@@ -110,7 +110,7 @@ impl Intarsia {
         let original_image = Some(Image {
             _image_type: ImageType::Original,
             path: original_image_path,
-            image: original_image,
+            data: original_image,
         });
         let mut processed_image_path: PathBuf = path.clone();
         processed_image_path.push("processed.png");
@@ -121,7 +121,7 @@ impl Intarsia {
         let processed_image = Some(Image {
             _image_type: ImageType::Original,
             path: processed_image_path,
-            image: processed_image,
+            data: processed_image,
         });
         Ok(Intarsia {
             name: name.to_string(),
@@ -140,7 +140,6 @@ impl Intarsia {
                 } else {
                     return Err(Error::External("Could not load original image".to_string()));
                 }
-                // image_file = self.original_image.expect("err").path;
             }
             ImageType::Processed => {
                 if let Some(image) = self.processed_image {
@@ -181,8 +180,8 @@ impl Intarsia {
             .map_err(|e| Error::External(e.to_string()))?;
         self.original_image = Some(Image {
             _image_type: ImageType::Original,
-            path: path,
-            image,
+            path,
+            data: image,
         });
         Ok(())
     }
@@ -245,7 +244,7 @@ impl Intarsia {
         colours: u8,
         add_axes: bool,
     ) -> Result<(), Error> {
-        let mut image = self.original_image.as_ref().unwrap().image.clone();
+        let mut image = self.original_image.as_ref().unwrap().data.clone();
         let width = image.width();
         let height = image.height();
         image = DynamicImage::ImageRgba8(blur(&image, 3.0));
@@ -281,8 +280,8 @@ impl Intarsia {
         }
         self.processed_image = Some(Image {
             _image_type: ImageType::Processed,
-            path: path,
-            image,
+            path,
+            data: image,
         });
         Ok(())
     }
